@@ -40,8 +40,17 @@ _HIGH_PATTERNS: List[Tuple[re.Pattern, str]] = [
     (re.compile(r"\bHACK\b", re.IGNORECASE), "HACK"),
     (re.compile(r"\bXXX\b"), "XXX"),
     (re.compile(r"\bBUG\b"), "BUG"),
-    (re.compile(r"\bSECURITY\b", re.IGNORECASE), "SECURITY"),
 ]
+
+_SKIP_FILE_SUFFIXES = (
+    "package-lock.json",
+    "yarn.lock",
+    "pnpm-lock.yaml",
+    "poetry.lock",
+    "Cargo.lock",
+)
+
+_PASSLIB_DEPRECATED = re.compile(r"""deprecated\s*=\s*['"]auto['"]""", re.IGNORECASE)
 
 _MEDIUM_PATTERNS: List[Tuple[re.Pattern, str]] = [
     (re.compile(r"\bTODO\b", re.IGNORECASE), "TODO"),
@@ -60,8 +69,20 @@ _LOW_PATTERNS: List[Tuple[re.Pattern, str]] = [
 ]
 
 
+def _should_skip_file(rel_path: str) -> bool:
+    normalized = rel_path.replace("\\", "/").lower()
+    if normalized.startswith("tests/") or "/tests/" in normalized:
+        return True
+    if normalized.endswith(_SKIP_FILE_SUFFIXES):
+        return True
+    return False
+
+
 def _classify_line(line: str) -> Optional[Tuple[str, str, str]]:
     """Return (severity, category, marker) for the highest-severity match, or None."""
+    if _PASSLIB_DEPRECATED.search(line):
+        return None
+
     for pattern, marker in _HIGH_PATTERNS:
         if pattern.search(line):
             return SEVERITY_HIGH, marker, marker
@@ -178,6 +199,9 @@ def audit_repository(
     findings_truncated = False
 
     for rel_path in file_tree[:MAX_FILES]:
+        if _should_skip_file(rel_path):
+            continue
+
         full_path = repo_path / rel_path
         try:
             if not full_path.is_file() or full_path.stat().st_size > MAX_FILE_BYTES:

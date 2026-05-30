@@ -11,7 +11,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Preformatted,
-    ListFlowable, ListItem
+    ListFlowable, ListItem, Table, TableStyle
 )
 
 
@@ -197,6 +197,18 @@ class PDFGenerator:
                 i += 1
                 continue
             
+            # Markdown table
+            elif line.strip().startswith('|'):
+                table_lines = []
+                while i < len(lines) and lines[i].strip().startswith('|'):
+                    table_lines.append(lines[i])
+                    i += 1
+                table_flowable = self._build_markdown_table(table_lines)
+                if table_flowable is not None:
+                    story.append(table_flowable)
+                    story.append(Spacer(1, 10))
+                continue
+
             # Headings
             if line.startswith('# '):
                 text = self._escape_html(line[2:].strip())
@@ -270,6 +282,80 @@ class PDFGenerator:
             i += 1
         
         return story
+
+    def _parse_table_row(self, line: str) -> list[str]:
+        cells = [cell.strip() for cell in line.strip().strip('|').split('|')]
+        return cells
+
+    def _is_table_separator(self, line: str) -> bool:
+        stripped = line.strip().strip('|').replace(' ', '')
+        if not stripped:
+            return False
+        return all(ch in '-:' for ch in stripped)
+
+    def _build_markdown_table(self, table_lines: list[str]):
+        if len(table_lines) < 2:
+            return None
+
+        header = self._parse_table_row(table_lines[0])
+        if not header:
+            return None
+
+        body_rows: list[list[str]] = []
+        start_idx = 1
+        if self._is_table_separator(table_lines[1]):
+            start_idx = 2
+
+        for row_line in table_lines[start_idx:]:
+            if self._is_table_separator(row_line):
+                continue
+            row = self._parse_table_row(row_line)
+            if not row:
+                continue
+            if len(row) < len(header):
+                row.extend([''] * (len(header) - len(row)))
+            body_rows.append(row[: len(header)])
+
+        if not body_rows:
+            return None
+
+        cell_style = ParagraphStyle(
+            'TableCell',
+            parent=self.styles['CustomBody'],
+            fontSize=8,
+            leading=10,
+        )
+        header_style = ParagraphStyle(
+            'TableHeader',
+            parent=cell_style,
+            fontName='Helvetica-Bold',
+        )
+
+        data = [
+            [Paragraph(self._process_inline_formatting(h), header_style) for h in header]
+        ]
+        for row in body_rows:
+            data.append([Paragraph(self._process_inline_formatting(cell), cell_style) for cell in row])
+
+        col_count = len(header)
+        available_width = self.page_size[0] - 1.5 * inch
+        col_width = available_width / col_count
+        table = Table(data, colWidths=[col_width] * col_count, repeatRows=1)
+        table.setStyle(
+            TableStyle(
+                [
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#e8eef5')),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#16213e')),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 4),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+                    ('TOPPADDING', (0, 0), (-1, -1), 4),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+                ]
+            )
+        )
+        return table
     
     def _escape_html(self, text: str) -> str:
         """Escape HTML special characters."""

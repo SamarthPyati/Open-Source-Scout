@@ -267,10 +267,12 @@ export async function auditRepo(repoUrl) {
   return res.json()
 }
 
-export async function exportPdf(content) {
+export async function exportPdf(content, { title } = {}) {
+  const payload = { content }
+  if (title) payload.title = title
   const res = await apiFetch(`/export/pdf`, {
     method: 'POST',
-    body: JSON.stringify({ content }),
+    body: JSON.stringify(payload),
   });
   if (!res.ok) {
     throw new Error((await responseErrorDetail(res)) || 'PDF export failed')

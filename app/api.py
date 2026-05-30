@@ -237,6 +237,7 @@ class ExportPdfRequest(BaseModel):
     """Request body for PDF export."""
 
     content: str
+    title: str | None = None
 
 
 class AuditRepoRequest(BaseModel):
@@ -1319,11 +1320,13 @@ def export_pdf(body: ExportPdfRequest):
     """Generate PDF from markdown content."""
     try:
         pdf_gen = PDFGenerator()
-        pdf_bytes = pdf_gen.markdown_to_pdf(body.content)
+        doc_title = (body.title or "").strip() or "Contributor Briefing Document"
+        pdf_bytes = pdf_gen.markdown_to_pdf(body.content, title=doc_title)
+        safe_name = re.sub(r"[^\w\-]+", "_", doc_title)[:60] or "document"
         return Response(
             content=pdf_bytes,
             media_type="application/pdf",
-            headers={"Content-Disposition": "attachment; filename=contributor_briefing.pdf"},
+            headers={"Content-Disposition": f'attachment; filename="{safe_name}.pdf"'},
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

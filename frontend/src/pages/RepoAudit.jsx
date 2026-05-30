@@ -61,7 +61,9 @@ export default function RepoAudit() {
     if (!report?.report_markdown) return
     setDownloading(true)
     try {
-      const blob = await exportPdf(report.report_markdown)
+      const blob = await exportPdf(report.report_markdown, {
+        title: `Repository Health Audit — ${report.repo_full_name}`,
+      })
       const objectUrl = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = objectUrl

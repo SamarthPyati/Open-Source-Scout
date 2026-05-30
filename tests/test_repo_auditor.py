@@ -99,3 +99,37 @@ def test_missing_files_are_skipped(tmp_path: Path):
 
     assert report.files_scanned == 1
     assert report.severity_counts.medium == 1
+
+
+def test_skips_tests_and_lockfiles(tmp_path: Path):
+    _write(tmp_path, "tests/test_x.py", "# FIXME in tests\n")
+    _write(tmp_path, "frontend/package-lock.json", '"deprecated": "old package"\n')
+    _write(tmp_path, "src/app.py", "# TODO real\n")
+
+    report = audit_repository(
+        repo_url="https://github.com/o/filter",
+        repo_full_name="o/filter",
+        repo_path=tmp_path,
+        file_tree=["tests/test_x.py", "frontend/package-lock.json", "src/app.py"],
+    )
+
+    assert report.files_scanned == 1
+    assert report.technical_debt == 1
+    assert report.severity_counts.medium == 1
+
+
+def test_passlib_deprecated_auto_not_flagged(tmp_path: Path):
+    _write(
+        tmp_path,
+        "app/auth_service.py",
+        'pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")\n',
+    )
+
+    report = audit_repository(
+        repo_url="https://github.com/o/auth",
+        repo_full_name="o/auth",
+        repo_path=tmp_path,
+        file_tree=["app/auth_service.py"],
+    )
+
+    assert report.technical_debt == 0
