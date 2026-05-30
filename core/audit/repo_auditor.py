@@ -51,6 +51,8 @@ _SKIP_FILE_SUFFIXES = (
 )
 
 _PASSLIB_DEPRECATED = re.compile(r"""deprecated\s*=\s*['"]auto['"]""", re.IGNORECASE)
+_PATTERN_DEFINITION = re.compile(r"re\.compile\s*\(")
+_SCHEMA_DOC_EXAMPLE = re.compile(r'Field\s*\(\s*description\s*=.*\be\.g\.\b', re.IGNORECASE)
 
 _MEDIUM_PATTERNS: List[Tuple[re.Pattern, str]] = [
     (re.compile(r"\bTODO\b", re.IGNORECASE), "TODO"),
@@ -78,9 +80,20 @@ def _should_skip_file(rel_path: str) -> bool:
     return False
 
 
+def _should_skip_line(line: str) -> bool:
+    """Ignore lines that define matchers or schema docs, not real debt."""
+    if _PASSLIB_DEPRECATED.search(line):
+        return True
+    if _PATTERN_DEFINITION.search(line):
+        return True
+    if _SCHEMA_DOC_EXAMPLE.search(line):
+        return True
+    return False
+
+
 def _classify_line(line: str) -> Optional[Tuple[str, str, str]]:
     """Return (severity, category, marker) for the highest-severity match, or None."""
-    if _PASSLIB_DEPRECATED.search(line):
+    if _should_skip_line(line):
         return None
 
     for pattern, marker in _HIGH_PATTERNS:

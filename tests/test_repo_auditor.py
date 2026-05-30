@@ -133,3 +133,23 @@ def test_passlib_deprecated_auto_not_flagged(tmp_path: Path):
     )
 
     assert report.technical_debt == 0
+
+
+def test_pattern_definition_lines_not_flagged(tmp_path: Path):
+    _write(
+        tmp_path,
+        "scanner.py",
+        '(re.compile(r"\\bFIXME\\b", re.IGNORECASE), "FIXME"),\n'
+        "# TODO: real debt here\n",
+    )
+
+    report = audit_repository(
+        repo_url="https://github.com/o/scanner",
+        repo_full_name="o/scanner",
+        repo_path=tmp_path,
+        file_tree=["scanner.py"],
+    )
+
+    assert report.technical_debt == 1
+    assert report.severity_counts.medium == 1
+    assert report.findings[0].category == "TODO"
