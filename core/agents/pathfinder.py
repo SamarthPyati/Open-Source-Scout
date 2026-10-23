@@ -286,9 +286,15 @@ Prioritize recent maintenance, good-first issues, README/contributing clarity, s
         if search_prompt:
             parsed = self._parse_search_preferences(search_prompt)
             merged_stack = list(dict.fromkeys(tag_stack + parsed.tech_stack))
+            domain = (parsed.domain or "").strip()
+            if not merged_stack and not domain:
+                # Neither a known tech nor a recognized domain was extracted
+                # (e.g. "CRM", "fintech") — fall back to the raw term so the
+                # search still runs instead of returning zero results.
+                domain = search_prompt.strip().lower()[:60]
             return RepoSearchPreferences(
                 tech_stack=merged_stack,
-                domain=parsed.domain or "",
+                domain=domain,
                 difficulty=parsed.difficulty or "beginner",
                 preferred_tasks=parsed.preferred_tasks,
             )

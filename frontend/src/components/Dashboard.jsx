@@ -251,7 +251,9 @@ export default function Dashboard() {
 
       {visibleRepos.length === 0 && (
         <p className="text-app-muted text-sm mb-6">
-          All results were previously skipped. Try another tech stack or clear skips from Agent Memory reset.
+          {rankedRepos.ranked_repos?.length > 0
+            ? 'All results were previously skipped. Try another tech stack or clear skips from Agent Memory reset.'
+            : 'No repositories matched your search. Try a more specific tech stack, framework, or language.'}
         </p>
       )}
 
