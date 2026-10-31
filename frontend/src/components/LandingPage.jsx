@@ -9,7 +9,6 @@ import {
   File,
   Sparkles,
   Star,
-  ChevronRight,
 } from 'lucide-react'
 import ScoutLogo from './ScoutLogo'
 
@@ -18,9 +17,6 @@ export default function LandingPage() {
 
   const btnPrimary =
     'inline-flex items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold text-[#0B0F14] bg-[#22C55E] shadow-[0_0_0_1px_rgba(34,197,94,0.25),0_8px_24px_-4px_rgba(34,197,94,0.35)] transition-all duration-200 ease-out hover:bg-[#16A34A] hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_rgba(34,197,94,0.35),0_12px_28px_-4px_rgba(34,197,94,0.4)] active:translate-y-0'
-
-  const btnSecondary =
-    'inline-flex items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-medium text-[#E6EDF3] border border-[#1F2937] bg-transparent transition-all duration-200 ease-out hover:border-[#3B82F6] hover:text-[#3B82F6] hover:-translate-y-0.5 active:translate-y-0'
 
   const navLink =
     'text-sm text-[#9DA7B3] transition-colors duration-200 hover:text-[#E6EDF3]'
@@ -113,11 +109,6 @@ export default function LandingPage() {
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <button type="button" onClick={() => navigate('/dashboard')} className={btnPrimary}>
                 Get started free
-
-              </button>
-              <button type="button" className={btnSecondary}>
-                Watch demo
-                <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           </div>
